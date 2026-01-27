@@ -1,6 +1,6 @@
 import { User, LoginCredentials, RegisterData, JwtPayload } from '../types/auth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://lks-translation-backend.onrender.com';
 
 interface LoginResponse {
   user: User;
