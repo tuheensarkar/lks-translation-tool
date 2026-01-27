@@ -11,6 +11,19 @@ async function runMigration() {
     console.log('🚀 Starting database migration...');
 
     try {
+        // Check if users table already exists
+        const tableExistsResult = await pool.query(`
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_name = 'users'
+            );
+        `);
+
+        if (tableExistsResult.rows[0].exists) {
+            console.log('✅ Database already initialized, skipping migration...');
+            process.exit(0);
+        }
+
         // Read the schema file
         const schemaPath = path.join(__dirname, '../../database/schema.sql');
         let schema = fs.readFileSync(schemaPath, 'utf-8');
