@@ -1,0 +1,43 @@
+import { 
+  UploadCloud, 
+  FileType, 
+  Languages, 
+  CheckCircle2, 
+  AlertCircle, 
+  FileText, 
+  X,
+  ArrowRight,
+  ShieldCheck,
+  Download,
+  Loader2,
+  ChevronDown,
+  Lock,
+  BadgeCheck,
+  FileCheck,
+  History,
+  Clock,
+  User,
+  LogOut
+} from 'lucide-react';
+
+export {
+  UploadCloud,
+  FileType,
+  Languages,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
+  X,
+  ArrowRight,
+  ShieldCheck,
+  Download,
+  Loader2,
+  ChevronDown,
+  Lock,
+  BadgeCheck,
+  FileCheck,
+  History,
+  Clock,
+  User,
+  LogOut
+};
