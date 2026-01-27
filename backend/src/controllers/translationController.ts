@@ -22,7 +22,7 @@ interface TranslationJobBody {
     documentType: string;
 }
 
-// Mock translation function (replace with actual AI translation service)
+// External translation function calling the provided API
 async function translateDocument(
     sourcePath: string,
     targetPath: string,
@@ -30,21 +30,72 @@ async function translateDocument(
     targetLanguage: string,
     documentType: string
 ): Promise<void> {
-    // This is a placeholder for actual translation logic
-    // In production, integrate with Google Translate API, DeepL, or custom AI model
+    const apiUrl = process.env.EXTERNAL_TRANSLATION_API_URL;
+    const apiKey = process.env.EXTERNAL_TRANSLATION_API_KEY;
 
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            try {
-                // For demo purposes, just copy the file with a prefix
+    if (!apiUrl || !apiKey) {
+        console.warn('External translation API configuration is missing, falling back to mock.');
+        // Fallback to mock for testing if env vars are missing
+        return new Promise((resolve) => {
+            setTimeout(() => {
                 const content = fs.readFileSync(sourcePath);
                 fs.writeFileSync(targetPath, content);
                 resolve();
-            } catch (error) {
-                reject(error);
+            }, 2000);
+        });
+    }
+
+    try {
+        const formData = new FormData();
+        const fileBuffer = fs.readFileSync(sourcePath);
+        const blob = new Blob([fileBuffer]);
+
+        formData.append('file', blob, path.basename(sourcePath));
+        formData.append('sourceLanguage', sourceLanguage);
+        formData.append('targetLanguage', targetLanguage);
+        formData.append('documentType', documentType);
+
+        console.log(`[Translation] Sending request to external API: ${apiUrl}`);
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'x-api-key': apiKey
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`External API error: ${response.status} - ${errorText}`);
+        }
+
+        const data: any = await response.json();
+        console.log('[Translation] API Response:', data);
+
+        if (data.translatedFileUrl) {
+            // Replace localhost with the actual IP if needed (handling the user's snippet quirk)
+            let downloadUrl = data.translatedFileUrl;
+            if (downloadUrl.includes('localhost') && apiUrl.includes('20.20.20.205')) {
+                downloadUrl = downloadUrl.replace('localhost', '20.20.20.205');
             }
-        }, 2000); // Simulate processing time
-    });
+
+            console.log(`[Translation] Downloading translated file from: ${downloadUrl}`);
+            const fileResponse = await fetch(downloadUrl);
+
+            if (!fileResponse.ok) {
+                throw new Error(`Failed to download translated file from ${downloadUrl}`);
+            }
+
+            const arrayBuffer = await fileResponse.arrayBuffer();
+            fs.writeFileSync(targetPath, Buffer.from(arrayBuffer));
+            console.log(`[Translation] Saved translated file to: ${targetPath}`);
+        } else {
+            throw new Error('External API did not return a translated file URL');
+        }
+    } catch (error: any) {
+        console.error('[Translation] External API integration failed:', error.message);
+        throw error;
+    }
 }
 
 // Process translation job
@@ -58,6 +109,7 @@ export const processTranslation = async (req: AuthRequest, res: Response) => {
         }
 
         if (!req.file) {
+            console.log('[Translation] Request failed: No file uploaded');
             return res.status(400).json({
                 success: false,
                 message: 'No file uploaded',
@@ -66,6 +118,8 @@ export const processTranslation = async (req: AuthRequest, res: Response) => {
 
         const { sourceLanguage, targetLanguage, documentType } = req.body as TranslationJobBody;
         const userId = req.user.userId;
+
+        console.log(`[Translation] Creating job for user: ${userId}, file: ${req.file.originalname}`);
 
         // Create translation job record
         const jobResult = await query(
@@ -87,6 +141,7 @@ export const processTranslation = async (req: AuthRequest, res: Response) => {
         );
 
         const jobId = jobResult.rows[0].id;
+        console.log(`[Translation] Job created with ID: ${jobId}`);
 
         // Start translation process asynchronously
         processTranslationAsync(jobId, req.file.path, req.file.originalname, sourceLanguage, targetLanguage, documentType);
@@ -100,7 +155,7 @@ export const processTranslation = async (req: AuthRequest, res: Response) => {
             },
         });
     } catch (error: any) {
-        console.error('Translation processing error:', error);
+        console.error('[Translation] Error in processTranslation:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to process translation request',
@@ -282,6 +337,8 @@ export const downloadFile = async (req: AuthRequest, res: Response) => {
         const userId = req.user.userId;
         const isAdmin = req.user.role === 'admin';
 
+        console.log(`[Download] Request for job: ${jobId} by user: ${userId}`);
+
         // Fetch job details
         const result = await query(
             `SELECT user_id, translated_file_path, translated_filename, status
@@ -291,6 +348,7 @@ export const downloadFile = async (req: AuthRequest, res: Response) => {
         );
 
         if (result.rows.length === 0) {
+            console.log(`[Download] Job not found: ${jobId}`);
             return res.status(404).json({
                 success: false,
                 message: 'Translation job not found',
@@ -301,6 +359,7 @@ export const downloadFile = async (req: AuthRequest, res: Response) => {
 
         // Check authorization (user must own the job or be admin)
         if (job.user_id !== userId && !isAdmin) {
+            console.log(`[Download] Permission denied for user: ${userId} on job: ${jobId}`);
             return res.status(403).json({
                 success: false,
                 message: 'You do not have permission to access this file',
@@ -309,6 +368,7 @@ export const downloadFile = async (req: AuthRequest, res: Response) => {
 
         // Check if translation is completed
         if (job.status !== 'completed') {
+            console.log(`[Download] Translation not completed. Status: ${job.status}`);
             return res.status(400).json({
                 success: false,
                 message: `Translation is not yet completed. Current status: ${job.status}`,
@@ -317,26 +377,31 @@ export const downloadFile = async (req: AuthRequest, res: Response) => {
 
         // Check if file exists
         if (!fs.existsSync(job.translated_file_path)) {
+            console.error(`[Download] File NOT found on disk at: ${job.translated_file_path}`);
             return res.status(404).json({
                 success: false,
                 message: 'Translated file not found on server',
             });
         }
 
+        console.log(`[Download] Sending file: ${job.translated_file_path}`);
+
         // Send file
         res.download(job.translated_file_path, job.translated_filename, (err: Error | null) => {
             if (err) {
-                console.error('File download error:', err);
+                console.error('[Download] res.download callback error:', err);
                 if (!res.headersSent) {
                     res.status(500).json({
                         success: false,
                         message: 'Failed to download file',
                     });
                 }
+            } else {
+                console.log(`[Download] Successfully sent: ${job.translated_filename}`);
             }
         });
     } catch (error: any) {
-        console.error('Download file error:', error);
+        console.error('[Download] Internal server error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to download file',

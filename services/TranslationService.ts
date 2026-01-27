@@ -1,6 +1,6 @@
 import AuthService from './AuthService';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_TRANSLATION_BACKEND_URL || 'http://20.20.20.205:5000';
 
 interface TranslationRequest {
   documentType: string;
@@ -52,7 +52,10 @@ class TranslationService {
 
       const response = await fetch(`${API_URL}/api/process-translation`, {
         method: 'POST',
-        headers: this.getAuthHeader(),
+        headers: {
+          ...this.getAuthHeader(),
+          'Authorization': `Bearer ${import.meta.env.VITE_TRANSLATION_API_KEY}`
+        },
         body: formData,
       });
 
@@ -63,8 +66,9 @@ class TranslationService {
       }
 
       return {
-        jobId: data.data.jobId,
-        status: data.data.status,
+        jobId: data.jobId,
+        status: data.status,
+        translatedFileUrl: data.translatedFileUrl
       };
     } catch (error: any) {
       throw new Error(error.message || 'Failed to submit translation request');
@@ -121,6 +125,7 @@ class TranslationService {
   // Download translated document
   async downloadTranslatedDocument(jobId: string, filename: string): Promise<void> {
     try {
+      console.log(`[Frontend] Starting download for job: ${jobId}`);
       const token = AuthService.getAuthToken();
       if (!token) {
         throw new Error('No authentication token found');
@@ -135,11 +140,14 @@ class TranslationService {
 
       if (!response.ok) {
         const data = await response.json();
+        console.error('[Frontend] Download request failed:', data);
         throw new Error(data.message || 'Download failed');
       }
 
+      console.log('[Frontend] Download response received, converting to blob...');
       // Create blob from response
       const blob = await response.blob();
+      console.log(`[Frontend] Blob created (Size: ${blob.size} bytes). Triggering browser download...`);
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -150,7 +158,9 @@ class TranslationService {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      console.log('[Frontend] Download triggered successfully');
     } catch (error: any) {
+      console.error('[Frontend] Download error:', error.message);
       throw new Error(error.message || 'Failed to download translated document');
     }
   }
