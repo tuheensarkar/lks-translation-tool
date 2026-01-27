@@ -7,8 +7,9 @@
     "scripts": {
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
-        "start": "node dist/server.js",
-        "db:migrate": "node dist/database/migrate.js"
+        "start": "npm run db:migrate && node dist/server.js",
+        "db:migrate": "node dist/database/migrate.js",
+        "postbuild": "npm run db:migrate"
     },
     "keywords": [
         "translation",
