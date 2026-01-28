@@ -106,9 +106,12 @@ class TranslationService {
   // Get translation status
   async getTranslationStatus(jobId: string): Promise<TranslationResponse> {
     try {
+      // Use the external API endpoint for job status
       const response = await fetch(`${API_URL}/api/jobs/${jobId}`, {
         method: 'GET',
-        headers: this.getAuthHeader(),
+        headers: {
+          'X-API-Key': import.meta.env.VITE_TRANSLATION_API_KEY || 'tr_api_1234567890abcdefghijklmnopqrstuvwxyz'
+        },
       });
 
       const data = await response.json();
@@ -117,14 +120,13 @@ class TranslationService {
         throw new Error(data.message || 'Failed to fetch job status');
       }
 
-      const job = data.data.job;
-
+      // Align with external API response format
       return {
-        jobId: job.id,
-        status: job.status,
-        progress: job.progress || 0,
-        translatedFileUrl: job.translatedFileUrl,
-        error: job.errorMessage,
+        jobId: data.jobId || jobId,
+        status: data.status,
+        progress: data.progress || 0,
+        translatedFileUrl: data.translatedFileUrl,
+        error: data.error,
       };
     } catch (error: any) {
       throw new Error(error.message || 'Failed to check translation status');
@@ -134,9 +136,12 @@ class TranslationService {
   // Get translation history
   async getTranslationHistory(limit: number = 50, offset: number = 0): Promise<TranslationJob[]> {
     try {
+      // Use the external API endpoint for translation history
       const response = await fetch(`${API_URL}/api/jobs?limit=${limit}&offset=${offset}`, {
         method: 'GET',
-        headers: this.getAuthHeader(),
+        headers: {
+          'X-API-Key': import.meta.env.VITE_TRANSLATION_API_KEY || 'tr_api_1234567890abcdefghijklmnopqrstuvwxyz'
+        },
       });
 
       const data = await response.json();
@@ -145,7 +150,20 @@ class TranslationService {
         throw new Error(data.message || 'Failed to fetch translation history');
       }
 
-      return data.data.jobs;
+      // Map external API response to TranslationJob interface
+      return data.jobs?.map((job: any) => ({
+        id: job.jobId,
+        sourceLanguage: job.sourceLanguage,
+        targetLanguage: job.targetLanguage,
+        documentType: job.documentType,
+        originalFilename: job.originalFilename,
+        translatedFilename: job.translatedFilename,
+        status: job.status,
+        errorMessage: job.error,
+        createdAt: job.createdAt,
+        completedAt: job.completedAt,
+        translatedFileUrl: job.translatedFileUrl,
+      })) || [];
     } catch (error: any) {
       throw new Error(error.message || 'Failed to fetch translation history');
     }

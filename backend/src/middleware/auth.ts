@@ -82,3 +82,17 @@ export const authorize = (...roles: string[]) => {
         next();
     };
 };
+
+// X-API-Key authentication middleware
+export const apiKeyAuth = (req: Request, res: Response, next: NextFunction) => {
+    const apiKey = req.headers['x-api-key'];
+    
+    if (!apiKey || apiKey !== process.env.TRANSLATION_API_KEY) {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid API key'
+        });
+    }
+    
+    next();
+};

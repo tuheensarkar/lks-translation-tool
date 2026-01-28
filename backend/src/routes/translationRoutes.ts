@@ -5,7 +5,7 @@ import {
     getTranslationHistory,
     downloadFile,
 } from '../controllers/translationController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, apiKeyAuth } from '../middleware/auth.js';
 import { validateTranslationJob } from '../middleware/validation.js';
 import upload, { handleUploadError } from '../middleware/upload.js';
 
@@ -18,7 +18,7 @@ const router = express.Router();
  */
 router.post(
     '/process-translation',
-    authenticate,
+    apiKeyAuth,
     upload.single('file'),
     handleUploadError,
     validateTranslationJob,
@@ -30,20 +30,20 @@ router.post(
  * @desc    Get translation job status
  * @access  Private
  */
-router.get('/jobs/:jobId', authenticate, getJobStatus);
+router.get('/jobs/:jobId', apiKeyAuth, getJobStatus);
 
 /**
  * @route   GET /api/jobs
  * @desc    Get user's translation history
  * @access  Private
  */
-router.get('/jobs', authenticate, getTranslationHistory);
+router.get('/jobs', apiKeyAuth, getTranslationHistory);
 
 /**
  * @route   GET /api/files/:jobId
  * @desc    Download translated file
  * @access  Private
  */
-router.get('/files/:jobId', authenticate, downloadFile);
+router.get('/files/:jobId', apiKeyAuth, downloadFile);
 
 export default router;
