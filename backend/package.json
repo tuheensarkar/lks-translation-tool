@@ -5,6 +5,7 @@
     "main": "dist/server.js",
     "type": "module",
     "scripts": {
+        "prebuild": "pip install -r requirements.txt",
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
         "start": "npm run db:migrate && node dist/server.js",
