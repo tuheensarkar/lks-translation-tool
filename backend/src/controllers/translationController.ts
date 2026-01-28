@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { fileURLToPath } from 'url';
+import { spawn, execSync } from 'child_process';
 import { query } from '../database/db.js';
 import { AuthRequest as BaseAuthRequest } from '../middleware/auth.js';
 
@@ -48,8 +49,6 @@ async function translateDocument(
     }
     
     // Use Python subprocess to run the translation
-    const { spawn } = await import('child_process');
-    
     return new Promise((resolve, reject) => {
         // Create a temporary Python script to call the translator
         const tempScriptPath = path.join(os.tmpdir(), `translate_${Date.now()}.py`);
@@ -57,6 +56,11 @@ async function translateDocument(
 import sys
 import os
 import json
+
+# Log environment info for debugging
+# print(f"DEBUG:Executable:{sys.executable}")
+# print(f"DEBUG:Path:{sys.path}")
+
 sys.path.insert(0, os.path.dirname('${pythonTranslatorPath.replace(/\\/g, '\\\\')}'))
 
 # Import the translator
@@ -77,7 +81,7 @@ try:
     result_path = translator.translate_file(r'${sourcePath.replace(/\\/g, '\\\\')}', r'${targetPath.replace(/\\/g, '\\\\')}')
     print(f"SUCCESS:{result_path}")
 except ImportError as e:
-    print(f"ERROR:Missing dependencies: {str(e)}")
+    print(f"ERROR:Missing dependencies: {str(e)} (Python: {sys.executable})")
     sys.exit(1)
 except Exception as e:
     print(f"ERROR:{str(e)}")
@@ -87,7 +91,23 @@ except Exception as e:
         fs.writeFileSync(tempScriptPath, scriptContent);
         
         // Try 'python3' first, then 'python'
-        const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+        let pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+        
+        // On Windows, check if 'python' is the Windows Store version and try to find a better one
+        if (process.platform === 'win32') {
+            try {
+                const wherePython = execSync('where python').toString().split(/\r?\n/);
+                // Filter out the WindowsApps one if possible and pick the first real installation
+                const realPython = wherePython.find(p => p && p.trim() && !p.includes('WindowsApps') && p.toLowerCase().includes('python.exe'));
+                if (realPython) {
+                    pythonCommand = realPython.trim();
+                    console.log(`[Translation] Found real Python at: ${pythonCommand}`);
+                }
+            } catch (e) {
+                console.warn('[Translation] Could not find absolute Python path, falling back to "python"');
+            }
+        }
+        
         console.log(`[Translation] Executing with command: ${pythonCommand}`);
         
         const pythonProcess = spawn(pythonCommand, [tempScriptPath], {
