@@ -144,20 +144,22 @@ except Exception as e:
             console.log(`[Translation Debug] Stderr: "${stderrOutput.trim()}"`);
             console.log(`[Translation Debug] Output starts with SUCCESS: ${output.trim().startsWith('SUCCESS:')}`);
             
-            // Primary check: Standard success pattern
-            if (code === 0 && output.trim().startsWith('SUCCESS:')) {
-                console.log('[Translation] Python translation completed successfully (primary check)');
+            // Primary check: Look for SUCCESS: anywhere in the output (not just at start)
+            if (code === 0 && output.trim().includes('SUCCESS:')) {
+                console.log('[Translation] Python translation completed successfully (primary check - SUCCESS found)');
                 resolve();
             }
             // Secondary check: If exit code is 0 and we can extract a file path, assume success
-            else if (code === 0 && output.trim().includes('SUCCESS:') && output.trim().includes('.pdf')) {
+            else if (code === 0 && output.trim().includes('SUCCESS:') && (output.trim().includes('.pdf') || output.trim().includes('.docx') || output.trim().includes('.xlsx'))) {
                 console.log('[Translation] Python translation completed successfully (secondary check - file path found)');
                 resolve();
             }
             else {
                 let errorMsg = '';
-                if (output.trim().startsWith('ERROR:')) {
-                    errorMsg = output.trim().substring(6);
+                // Check if there's an ERROR message in the output
+                const errorMatch = output.match(/ERROR:(.*)/);
+                if (errorMatch) {
+                    errorMsg = errorMatch[1].trim();
                 } else {
                     errorMsg = `Python process exited with code ${code}. Output: ${output.trim()} Stderr: ${stderrOutput.trim()}`;
                 }
