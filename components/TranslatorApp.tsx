@@ -52,38 +52,59 @@ const TranslatorApp: React.FC = () => {
     });
   };
 
-  const startTranslation = () => {
-    if (!state.file || !state.docType) return;
+  const startTranslation = async () => {  // ✅ Made async
+  if (!state.file || !state.docType) return;
 
-    setState(prev => ({ ...prev, status: 'uploading', progress: 0 }));
+  setState(prev => ({ ...prev, status: 'uploading', progress: 0, errorMessage: undefined }));
 
-    // Simulate upload
-    let progress = 0;
-    const uploadInterval = setInterval(() => {
-      progress += 5;
-      if (progress >= 100) {
-        clearInterval(uploadInterval);
-        setState(prev => ({ ...prev, status: 'processing', progress: 0 }));
-        startProcessing();
-      } else {
-        setState(prev => ({ ...prev, progress }));
-      }
-    }, 100);
-  };
+  try {
+    console.log('[TranslatorApp] Starting translation...', {
+      file: state.file?.name,
+      docType: state.docType,
+      sourceLang: state.sourceLang,
+      targetLang: state.targetLang
+    });
 
-  const startProcessing = () => {
-    // Simulate server-side translation
-    let progress = 0;
-    const processInterval = setInterval(() => {
-      progress += 2;
-      if (progress >= 100) {
-        clearInterval(processInterval);
-        setState(prev => ({ ...prev, status: 'completed', progress: 100 }));
-      } else {
-        setState(prev => ({ ...prev, progress }));
-      }
-    }, 150);
-  };
+    // ✅ Call the actual translation API
+    const response = await TranslationService.translateDocument({
+      file: state.file!,
+      documentType: state.docType,
+      sourceLanguage: state.sourceLang || 'auto',
+      targetLanguage: state.targetLang || 'English'
+    });
+
+    console.log('[TranslatorApp] Translation response:', response);
+
+    if (response.status === 'completed' && response.translatedFileUrl) {
+      setState(prev => ({ 
+        ...prev, 
+        status: 'completed', 
+        progress: 100,
+        translatedFileUrl: response.translatedFileUrl  // ✅ Store download URL
+      }));
+    } else if (response.status === 'failed') {
+      setState(prev => ({ 
+        ...prev, 
+        status: 'error', 
+        errorMessage: response.error || 'Translation failed'
+      }));
+    } else {
+      // If status is processing, we might need to poll
+      setState(prev => ({ 
+        ...prev, 
+        status: 'processing', 
+        progress: response.progress || 50
+      }));
+    }
+  } catch (error: any) {
+    console.error('[TranslatorApp] Translation error:', error);
+    setState(prev => ({ 
+      ...prev, 
+      status: 'error', 
+      errorMessage: error.message || 'Failed to translate document. Please try again.'
+    }));
+  }
+};
 
   const selectedDocTypeOption = DOCUMENT_TYPES.find(d => d.id === state.docType) || null;
   const isReadyToTranslate = state.docType && state.sourceLang && state.targetLang && state.file;

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import { query } from '../database/db.js';
 import { AuthRequest as BaseAuthRequest } from '../middleware/auth.js';
@@ -22,7 +23,7 @@ interface TranslationJobBody {
     documentType: string;
 }
 
-// External translation function calling the provided API
+// External translation function using Python translator
 async function translateDocument(
     sourcePath: string,
     targetPath: string,
@@ -30,12 +31,13 @@ async function translateDocument(
     targetLanguage: string,
     documentType: string
 ): Promise<void> {
-    const apiUrl = process.env.EXTERNAL_TRANSLATION_API_URL;
-    const apiKey = process.env.EXTERNAL_TRANSLATION_API_KEY;
-
-    if (!apiUrl || !apiKey) {
-        console.warn('External translation API configuration is missing, falling back to mock.');
-        // Fallback to mock for testing if env vars are missing
+    // First, try to use the Python translator if available
+    const pythonTranslatorPath = path.join(__dirname, '../../../universal_translator.py');
+    
+    // Check if the Python file exists
+    if (!fs.existsSync(pythonTranslatorPath)) {
+        console.warn('Python translator not found, falling back to mock.');
+        // Fallback to mock for testing if Python translator is not available
         return new Promise((resolve) => {
             setTimeout(() => {
                 const content = fs.readFileSync(sourcePath);
@@ -44,58 +46,79 @@ async function translateDocument(
             }, 2000);
         });
     }
+    
+    // Use Python subprocess to run the translation
+    const { spawn } = await import('child_process');
+    
+    return new Promise((resolve, reject) => {
+        // Create a temporary Python script to call the translator
+        const tempScriptPath = path.join(os.tmpdir(), `translate_${Date.now()}.py`);
+        const scriptContent = `
+import sys
+import os
+import json
+sys.path.insert(0, os.path.dirname('${pythonTranslatorPath.replace(/\\/g, '\\\\')}'))
 
-    try {
-        const formData = new FormData();
-        const fileBuffer = fs.readFileSync(sourcePath);
-        const blob = new Blob([fileBuffer]);
+# Import the translator
+from universal_translator import UniversalTranslator
 
-        formData.append('file', blob, path.basename(sourcePath));
-        formData.append('sourceLanguage', sourceLanguage);
-        formData.append('targetLanguage', targetLanguage);
-        formData.append('documentType', documentType);
+# Get API key from environment
+api_key = os.environ.get('OPENAI_API_KEY')
+if not api_key:
+    # Try to get from the default config
+    from universal_translator import Config
+    api_key = Config.API_KEY
 
-        console.log(`[Translation] Sending request to external API: ${apiUrl}`);
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'x-api-key': apiKey
-            },
-            body: formData
+if api_key:
+    translator = UniversalTranslator(api_key=api_key)
+else:
+    # Create translator - it will use the default if available
+    translator = UniversalTranslator()
+
+try:
+    result_path = translator.translate_file(r'${sourcePath.replace(/\\/g, '\\\\')}', r'${targetPath.replace(/\\/g, '\\\\')}')
+    print(f"SUCCESS:{result_path}")
+except Exception as e:
+    print(f"ERROR:{str(e)}")
+        `;
+        
+        fs.writeFileSync(tempScriptPath, scriptContent);
+        
+        const pythonProcess = spawn('python', [tempScriptPath]);
+        
+        let output = '';
+        pythonProcess.stdout.on('data', (data) => {
+            output += data.toString();
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`External API error: ${response.status} - ${errorText}`);
-        }
-
-        const data: any = await response.json();
-        console.log('[Translation] API Response:', data);
-
-        if (data.translatedFileUrl) {
-            // Replace localhost with the actual IP if needed (handling the user's snippet quirk)
-            let downloadUrl = data.translatedFileUrl;
-            if (downloadUrl.includes('localhost') && apiUrl.includes('20.20.20.205')) {
-                downloadUrl = downloadUrl.replace('localhost', '20.20.20.205');
+        
+        pythonProcess.stderr.on('data', (data) => {
+            console.error('[Python]', data.toString());
+        });
+        
+        pythonProcess.on('close', (code) => {
+            // Clean up the temporary script
+            try {
+                fs.unlinkSync(tempScriptPath);
+            } catch (unlinkErr) {
+                console.error('Error cleaning up temp script:', unlinkErr);
             }
-
-            console.log(`[Translation] Downloading translated file from: ${downloadUrl}`);
-            const fileResponse = await fetch(downloadUrl);
-
-            if (!fileResponse.ok) {
-                throw new Error(`Failed to download translated file from ${downloadUrl}`);
+            
+            if (code === 0 && output.trim().startsWith('SUCCESS:')) {
+                console.log('[Translation] Python translation completed successfully');
+                resolve();
+            } else {
+                const errorMsg = output.trim().startsWith('ERROR:') ? 
+                    output.trim().substring(6) : 
+                    `Python process exited with code ${code}, output: ${output}`;
+                reject(new Error(errorMsg));
             }
-
-            const arrayBuffer = await fileResponse.arrayBuffer();
-            fs.writeFileSync(targetPath, Buffer.from(arrayBuffer));
-            console.log(`[Translation] Saved translated file to: ${targetPath}`);
-        } else {
-            throw new Error('External API did not return a translated file URL');
-        }
-    } catch (error: any) {
-        console.error('[Translation] External API integration failed:', error.message);
-        throw error;
-    }
+        });
+        
+        pythonProcess.on('error', (error) => {
+            console.error('[Translation] Python process error:', error);
+            reject(error);
+        });
+    });
 }
 
 // Process translation job
