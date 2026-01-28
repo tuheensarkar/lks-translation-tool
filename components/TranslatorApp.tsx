@@ -5,6 +5,7 @@ import FileUpload from './FileUpload';
 import StatusFeedback from './StatusFeedback';
 import CustomDropdown from './CustomDropdown';
 import TranslationHistory from './TranslationHistory';
+import TranslationService from '../services/TranslationService'; 
 import { DOCUMENT_TYPES, LANGUAGES } from '../constants';
 import { TranslationState, DocumentType } from '../types';
 import { ArrowRight, CheckCircle2, ShieldCheck, Languages as LangIcon } from './ui/Icons';
@@ -339,7 +340,5 @@ const TranslatorApp: React.FC = () => {
     </div>
   );
 };
-
-
 
 export default TranslatorApp;

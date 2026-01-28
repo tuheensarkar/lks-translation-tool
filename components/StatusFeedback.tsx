@@ -3,6 +3,7 @@ import { CheckCircle2, AlertCircle, Loader2, Download, ArrowRight, History, File
 import { ProcessingStatus, TranslationState } from '../types';
 import { DOCUMENT_TYPES, LANGUAGES } from '../constants';
 import TranslationHistory from './TranslationHistory';
+import TranslationService from '../services/TranslationService';
 
 interface StatusFeedbackProps {
   state: TranslationState;
@@ -11,7 +12,29 @@ interface StatusFeedbackProps {
 }
 
 const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewHistory }) => {
-  const { status, progress, errorMessage, file, docType, sourceLang, targetLang } = state;
+  const { status, progress, errorMessage, file, docType, sourceLang, targetLang, translatedFileUrl } = state;  // ✅ Added translatedFileUrl
+  const [isDownloading, setIsDownloading] = useState(false);  // ✅ Added download state
+
+  // ✅ Added download handler function
+  const handleDownload = async () => {
+    if (!translatedFileUrl || !file) return;
+    
+    setIsDownloading(true);
+    try {
+      // Extract filename from original file and create translated filename
+      const originalName = file.name;
+      const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+      const ext = originalName.substring(originalName.lastIndexOf('.')) || '';
+      const translatedFilename = `${nameWithoutExt}_translated${ext}`;
+      
+      await TranslationService.downloadTranslatedDocument(translatedFileUrl, translatedFilename);
+    } catch (error: any) {
+      console.error('[StatusFeedback] Download error:', error);
+      alert(`Download failed: ${error.message}`);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   if (status === 'idle') return null;
 
@@ -82,10 +105,14 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewH
                 </p>
                 
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                  <button className="flex items-center justify-center space-x-2 bg-lks-gold text-lks-navy px-6 py-3 rounded-md hover:bg-lks-goldLight transition-all shadow-lg font-semibold tracking-wide">
-                    <Download size={18} />
-                    <span>Download Document</span>
-                  </button>
+  <button 
+    onClick={handleDownload}  // ✅ Added onClick handler
+    disabled={isDownloading || !translatedFileUrl}  // ✅ Added disabled state
+    className="flex items-center justify-center space-x-2 bg-lks-gold text-lks-navy px-6 py-3 rounded-md hover:bg-lks-goldLight transition-all shadow-lg font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"  // ✅ Added disabled styles
+  >
+    <Download size={18} />
+    <span>{isDownloading ? 'Downloading...' : 'Download Document'}</span>  // ✅ Added loading state
+  </button>
                   <div className="h-12 px-4 bg-white/10 rounded-md border border-white/20 flex items-center min-w-[200px]">
                     <span className="text-sm text-blue-100 truncate">
                       Translated_{file?.name || 'document'}

@@ -29,4 +29,5 @@ export interface TranslationState {
   status: ProcessingStatus;
   progress: number;
   errorMessage?: string;
+  translatedFileUrl?: string;
 }
