@@ -119,7 +119,7 @@ const TranslatorApp: React.FC = () => {
 
   const selectedDocTypeOption = DOCUMENT_TYPES.find(d => d.id === state.docType) || null;
   const isReadyToTranslate = state.docType && state.sourceLang && state.targetLang && state.file;
-  const isProcessingOrComplete = state.status !== 'idle' && state.status !== 'error';
+  const isProcessingOrComplete = state.status !== 'idle';
 
   // Poll for status when processing
   React.useEffect(() => {

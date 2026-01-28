@@ -60,39 +60,50 @@ import json
 sys.path.insert(0, os.path.dirname('${pythonTranslatorPath.replace(/\\/g, '\\\\')}'))
 
 # Import the translator
-from universal_translator import UniversalTranslator
-
-# Get API key from environment
-api_key = os.environ.get('OPENAI_API_KEY')
-if not api_key:
-    # Try to get from the default config
-    from universal_translator import Config
-    api_key = Config.API_KEY
-
-if api_key:
-    translator = UniversalTranslator(api_key=api_key)
-else:
-    # Create translator - it will use the default if available
-    translator = UniversalTranslator()
-
 try:
+    from universal_translator import UniversalTranslator, Config
+    
+    # Get API key from environment
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        # Try to get from the default config
+        api_key = Config.API_KEY
+
+    if not api_key:
+        print("ERROR:OpenAI API key required. Please set OPENAI_API_KEY environment variable.")
+        sys.exit(1)
+
+    translator = UniversalTranslator(api_key=api_key)
     result_path = translator.translate_file(r'${sourcePath.replace(/\\/g, '\\\\')}', r'${targetPath.replace(/\\/g, '\\\\')}')
     print(f"SUCCESS:{result_path}")
+except ImportError as e:
+    print(f"ERROR:Missing dependencies: {str(e)}")
+    sys.exit(1)
 except Exception as e:
     print(f"ERROR:{str(e)}")
+    sys.exit(1)
         `;
         
         fs.writeFileSync(tempScriptPath, scriptContent);
         
-        const pythonProcess = spawn('python', [tempScriptPath]);
+        // Try 'python3' first, then 'python'
+        const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+        console.log(`[Translation] Executing with command: ${pythonCommand}`);
+        
+        const pythonProcess = spawn(pythonCommand, [tempScriptPath], {
+            env: { ...process.env }
+        });
         
         let output = '';
+        let stderrOutput = '';
         pythonProcess.stdout.on('data', (data) => {
             output += data.toString();
         });
         
         pythonProcess.stderr.on('data', (data) => {
-            console.error('[Python]', data.toString());
+            const str = data.toString();
+            console.error('[Python Stderr]', str);
+            stderrOutput += str;
         });
         
         pythonProcess.on('close', (code) => {
@@ -107,9 +118,12 @@ except Exception as e:
                 console.log('[Translation] Python translation completed successfully');
                 resolve();
             } else {
-                const errorMsg = output.trim().startsWith('ERROR:') ? 
-                    output.trim().substring(6) : 
-                    `Python process exited with code ${code}, output: ${output}`;
+                let errorMsg = '';
+                if (output.trim().startsWith('ERROR:')) {
+                    errorMsg = output.trim().substring(6);
+                } else {
+                    errorMsg = `Python process exited with code ${code}. Output: ${output.trim()} Stderr: ${stderrOutput.trim()}`;
+                }
                 reject(new Error(errorMsg));
             }
         });
