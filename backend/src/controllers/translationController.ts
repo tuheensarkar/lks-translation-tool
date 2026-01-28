@@ -57,11 +57,15 @@ import sys
 import os
 import json
 
+# Change to project root directory to ensure imports work correctly
+project_root = os.path.dirname(r'${pythonTranslatorPath.replace(/\\/g, '\\\\')}')
+os.chdir(project_root)
+sys.path.insert(0, project_root)
+
 # Log environment info for debugging
+# print(f"DEBUG:Working directory:{os.getcwd()}")
 # print(f"DEBUG:Executable:{sys.executable}")
 # print(f"DEBUG:Path:{sys.path}")
-
-sys.path.insert(0, os.path.dirname('${pythonTranslatorPath.replace(/\\/g, '\\\\')}'))
 
 # Import the translator
 try:
