@@ -125,29 +125,21 @@ const FileUpload: React.FC<FileUploadProps> = ({
             ${hasError ? 'border-red-300 bg-red-50' : ''}
           `}
         >
-          <input
-            type="file"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            onChange={handleFileInput}
-            accept={selectedDocType.extensions.join(',')}
-            title="Select legal documents only (contracts, agreements, legal briefs, etc.)"
-          />
-          
           {validationError && (
-            <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white text-xs p-2 text-center">
+            <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white text-xs p-2 text-center z-30">
               {validationError}
             </div>
           )}
           
           {/* Animated Icon Background */}
-          <div className={`absolute pointer-events-none transition-transform duration-500 opacity-5
+          <div className={`absolute pointer-events-none transition-transform duration-500 opacity-5 z-0
             ${isDragging ? 'scale-150 text-lks-gold' : 'scale-100 text-lks-navy'}`}>
              <UploadCloud size={160} />
           </div>
 
           <div className="relative z-20 flex flex-col items-center">
             <div className={`
-              p-5 rounded-2xl mb-5 transition-all duration-300 shadow-sm
+              p-5 rounded-2xl mb-5 transition-all duration-300 shadow-sm z-10
               ${isDragging 
                 ? 'bg-lks-gold text-white scale-110 rotate-3' 
                 : 'bg-lks-navy text-white group-hover:bg-lks-navyLight group-hover:-translate-y-1'
@@ -156,19 +148,27 @@ const FileUpload: React.FC<FileUploadProps> = ({
               <UploadCloud size={32} strokeWidth={1.5} />
             </div>
             
-            <h3 className={`text-xl font-serif font-bold mb-2 transition-colors ${isDragging ? 'text-lks-navy' : 'text-gray-900'}`}>
+            <h3 className={`text-xl font-serif font-bold mb-2 transition-colors ${isDragging ? 'text-lks-navy' : 'text-gray-900'} z-10`}>
               Upload your document
             </h3>
             
-            <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto leading-relaxed">
+            <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto leading-relaxed z-10">
               Drag and drop your file here, or click to browse your secure local directory.
             </p>
             
-            <div className="inline-flex items-center px-4 py-1.5 bg-gray-100 rounded-full border border-gray-200 text-xs font-medium text-gray-500 shadow-sm">
+            <div className="inline-flex items-center px-4 py-1.5 bg-gray-100 rounded-full border border-gray-200 text-xs font-medium text-gray-500 shadow-sm z-10">
                <span className="mr-2 uppercase tracking-wider text-lks-navy font-bold">Accepted:</span> 
                {selectedDocType.extensions.join(', ')}
             </div>
           </div>
+          
+          <input
+            type="file"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+            onChange={handleFileInput}
+            accept={selectedDocType.extensions.join(',')}
+            title="Select legal documents only (contracts, agreements, legal briefs, etc.)"
+          />
         </div>
       ) : (
         /* Success / Selected State */
