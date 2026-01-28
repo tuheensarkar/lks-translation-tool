@@ -4,7 +4,7 @@ import Footer from './Footer';
 import FileUpload from './FileUpload';
 import StatusFeedback from './StatusFeedback';
 import CustomDropdown from './CustomDropdown';
-import TranslationHistory from './TranslationHistory';
+import TranslationHistory from './TranslationHistory';  
 import TranslationService from '../services/TranslationService'; 
 import { DOCUMENT_TYPES, LANGUAGES } from '../constants';
 import { TranslationState, DocumentType } from '../types';
@@ -34,11 +34,21 @@ const TranslatorApp: React.FC = () => {
   };
 
   const handleFileSelect = (file: File) => {
-    setState(prev => ({ ...prev, file, status: 'idle' }));
+    setState(prev => {
+      if (prev.status !== 'idle' && prev.status !== 'error') {
+        return prev;
+      }
+      return { ...prev, file, status: 'idle' };
+    });
   };
 
   const handleFileRemove = () => {
-    setState(prev => ({ ...prev, file: null, status: 'idle' }));
+    setState(prev => {
+      if (prev.status !== 'idle' && prev.status !== 'error') {
+        return prev;
+      }
+      return { ...prev, file: null, status: 'idle' };
+    });
   };
 
   const handleReset = () => {
