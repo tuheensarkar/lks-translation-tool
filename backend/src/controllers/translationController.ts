@@ -144,10 +144,17 @@ except Exception as e:
             console.log(`[Translation Debug] Stderr: "${stderrOutput.trim()}"`);
             console.log(`[Translation Debug] Output starts with SUCCESS: ${output.trim().startsWith('SUCCESS:')}`);
             
+            // Primary check: Standard success pattern
             if (code === 0 && output.trim().startsWith('SUCCESS:')) {
-                console.log('[Translation] Python translation completed successfully');
+                console.log('[Translation] Python translation completed successfully (primary check)');
                 resolve();
-            } else {
+            }
+            // Secondary check: If exit code is 0 and we can extract a file path, assume success
+            else if (code === 0 && output.trim().includes('SUCCESS:') && output.trim().includes('.pdf')) {
+                console.log('[Translation] Python translation completed successfully (secondary check - file path found)');
+                resolve();
+            }
+            else {
                 let errorMsg = '';
                 if (output.trim().startsWith('ERROR:')) {
                     errorMsg = output.trim().substring(6);
