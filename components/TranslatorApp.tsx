@@ -110,6 +110,50 @@ const TranslatorApp: React.FC = () => {
   const isReadyToTranslate = state.docType && state.sourceLang && state.targetLang && state.file;
   const isProcessingOrComplete = state.status !== 'idle' && state.status !== 'error';
 
+  // Poll for status when processing
+  useEffect(() => {
+    let pollInterval: NodeJS.Timeout;
+
+    if (state.status === 'processing' && state.jobId) {
+      pollInterval = setInterval(async () => {
+        try {
+          const statusResponse = await TranslationService.getTranslationStatus(state.jobId!);
+          console.log('[TranslatorApp] Poll status:', statusResponse);
+
+          if (statusResponse.status === 'completed') {
+            setState(prev => ({
+              ...prev,
+              status: 'completed',
+              progress: 100,
+              translatedFileUrl: statusResponse.translatedFileUrl
+            }));
+            clearInterval(pollInterval);
+          } else if (statusResponse.status === 'failed') {
+            setState(prev => ({
+              ...prev,
+              status: 'error',
+              errorMessage: statusResponse.error || 'Translation failed during processing'
+            }));
+            clearInterval(pollInterval);
+          } else {
+             // Update progress if available
+             setState(prev => ({
+               ...prev,
+               progress: statusResponse.progress || prev.progress
+             }));
+          }
+        } catch (error) {
+          console.error('Error polling status:', error);
+          // Don't fail immediately on poll error, might be transient
+        }
+      }, 2000); // Poll every 2 seconds
+    }
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [state.status, state.jobId]);
+
   // Helper to determine step status for the sidebar
   const getStepStatus = (step: number) => {
     if (state.status === 'completed') return 'completed';

@@ -30,4 +30,5 @@ export interface TranslationState {
   progress: number;
   errorMessage?: string;
   translatedFileUrl?: string;
+  jobId?: string;
 }

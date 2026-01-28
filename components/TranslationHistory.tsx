@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Download, FileText, CheckCircle2, X, AlertCircle, Loader2, History } from '../components/ui/Icons';
 import { useAuth } from '../contexts/AuthContext';
-import AuthService from '../services/AuthService';
+import TranslationService from '../services/TranslationService';
 
 interface TranslationJob {
   id: string;
@@ -9,11 +9,12 @@ interface TranslationJob {
   targetLanguage: string;
   documentType: string;
   originalFilename: string;
-  translatedFilename: string;
+  translatedFilename?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  errorMessage?: string;
   createdAt: string;
-  completedAt: string | null;
-  translatedFileUrl: string | null;
+  completedAt?: string;
+  translatedFileUrl?: string;
 }
 
 const TranslationHistory: React.FC = () => {
@@ -30,23 +31,8 @@ const TranslationHistory: React.FC = () => {
   const fetchTranslationHistory = async () => {
     try {
       setLoading(true);
-      const token = AuthService.getAuthToken();
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/jobs`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch translation history');
-      }
-
-      const data = await response.json();
-      setJobs(data.data.jobs || []);
+      const history = await TranslationService.getTranslationHistory();
+      setJobs(history as any); // Cast because types might slightly differ but are compatible
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching translation history');
       console.error('Error fetching translation history:', err);
@@ -83,30 +69,12 @@ const TranslationHistory: React.FC = () => {
 
   const downloadFile = async (jobId: string, filename: string) => {
     try {
-      const token = AuthService.getAuthToken();
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/files/${jobId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to download file');
+      const job = jobs.find(j => j.id === jobId);
+      if (!job || !job.translatedFileUrl) {
+          throw new Error('Download URL not available');
       }
 
-      // Create a blob from the response and download it
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      await TranslationService.downloadTranslatedDocument(job.translatedFileUrl, filename);
     } catch (err: any) {
       console.error('Error downloading file:', err);
       alert('Failed to download file: ' + err.message);

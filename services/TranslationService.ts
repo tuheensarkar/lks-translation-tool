@@ -89,12 +89,14 @@ class TranslationService {
       throw new Error(errorMsg);
     }
 
-    // ✅ Backend returns: { jobId, status, progress, translatedFileUrl }
+    // ✅ Backend returns: { success: true, data: { jobId, status, progress } }
+    const result = data.data || {};
+    
     return {
-      jobId: data.jobId,
-      status: data.status,
-      progress: data.progress || 0,
-      translatedFileUrl: data.translatedFileUrl,
+      jobId: result.jobId,
+      status: result.status,
+      progress: result.progress || 0,
+      translatedFileUrl: result.translatedFileUrl,
       error: data.error
     };
   } catch (error: any) {
@@ -121,12 +123,15 @@ class TranslationService {
       }
 
       // Align with external API response format
+      // Backend returns: { success: true, data: { job: { ... } } }
+      const job = data.data?.job || {};
+      
       return {
-        jobId: data.jobId || jobId,
-        status: data.status,
-        progress: data.progress || 0,
-        translatedFileUrl: data.translatedFileUrl,
-        error: data.error,
+        jobId: job.id || jobId,
+        status: job.status,
+        progress: job.progress || 0,
+        translatedFileUrl: job.translatedFileUrl,
+        error: job.errorMessage || job.error,
       };
     } catch (error: any) {
       throw new Error(error.message || 'Failed to check translation status');
@@ -172,12 +177,19 @@ class TranslationService {
   // Download translated document
   async downloadTranslatedDocument(translatedFileUrl: string, filename: string): Promise<void> {
   try {
-    console.log(`[Frontend] Starting download from URL: ${translatedFileUrl}`);
+    // Construct full URL if relative
+    const fullUrl = translatedFileUrl.startsWith('http') 
+      ? translatedFileUrl 
+      : `${API_URL}${translatedFileUrl.startsWith('/') ? '' : '/'}${translatedFileUrl}`;
+
+    console.log(`[Frontend] Starting download from URL: ${fullUrl}`);
     
-    // ✅ Use the translatedFileUrl directly (from backend response: /api/download/<file_id>)
-    const response = await fetch(translatedFileUrl, {
+    // ✅ Use the fullUrl
+    const response = await fetch(fullUrl, {
       method: 'GET',
-      // ✅ No headers needed - download endpoint is public
+      headers: {
+          'X-API-Key': import.meta.env.VITE_TRANSLATION_API_KEY || 'tr_api_1234567890abcdefghijklmnopqrstuvwxyz'
+      },
     });
 
     if (!response.ok) {
