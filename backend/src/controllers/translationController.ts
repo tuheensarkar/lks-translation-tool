@@ -380,7 +380,7 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
               original_filename, translated_filename, status, created_at, completed_at
        FROM translation_jobs
        ORDER BY created_at DESC
-       LIMIT $2 OFFSET $3`,
+       LIMIT $1 OFFSET $2`,
             [limit, offset]
         );
 
