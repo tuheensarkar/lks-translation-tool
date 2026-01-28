@@ -111,7 +111,7 @@ const TranslatorApp: React.FC = () => {
   const isProcessingOrComplete = state.status !== 'idle' && state.status !== 'error';
 
   // Poll for status when processing
-  useEffect(() => {
+  React.useEffect(() => {
     let pollInterval: NodeJS.Timeout;
 
     if (state.status === 'processing' && state.jobId) {
