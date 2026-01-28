@@ -105,14 +105,14 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewH
                 </p>
                 
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-  <button 
-    onClick={handleDownload}  // ✅ Added onClick handler
-    disabled={isDownloading || !translatedFileUrl}  // ✅ Added disabled state
-    className="flex items-center justify-center space-x-2 bg-lks-gold text-lks-navy px-6 py-3 rounded-md hover:bg-lks-goldLight transition-all shadow-lg font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"  // ✅ Added disabled styles
-  >
-    <Download size={18} />
-    <span>{isDownloading ? 'Downloading...' : 'Download Document'}</span>  // ✅ Added loading state
-  </button>
+                  <button 
+                    onClick={handleDownload}  // ✅ Added onClick handler
+                    disabled={isDownloading || !translatedFileUrl}  // ✅ Added disabled state
+                    className="flex items-center justify-center space-x-2 bg-lks-gold text-lks-navy px-6 py-3 rounded-md hover:bg-lks-goldLight transition-all shadow-lg font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"  // ✅ Added disabled styles
+                  >
+                    <Download size={18} />
+                    <span>{isDownloading ? 'Downloading...' : 'Download Document'}</span>  
+                  </button>
                   <div className="h-12 px-4 bg-white/10 rounded-md border border-white/20 flex items-center min-w-[200px]">
                     <span className="text-sm text-blue-100 truncate">
                       Translated_{file?.name || 'document'}
