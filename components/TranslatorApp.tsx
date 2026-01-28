@@ -4,6 +4,7 @@ import Footer from './Footer';
 import FileUpload from './FileUpload';
 import StatusFeedback from './StatusFeedback';
 import CustomDropdown from './CustomDropdown';
+import TranslationHistory from './TranslationHistory';
 import { DOCUMENT_TYPES, LANGUAGES } from '../constants';
 import { TranslationState, DocumentType } from '../types';
 import { ArrowRight, CheckCircle2, ShieldCheck, Languages as LangIcon } from './ui/Icons';
@@ -18,6 +19,8 @@ const TranslatorApp: React.FC = () => {
     progress: 0,
     errorMessage: undefined
   });
+
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const handleDocTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value as DocumentType;
@@ -135,7 +138,7 @@ const TranslatorApp: React.FC = () => {
             
             {/* If Processing or Complete, show the Feedback Component instead of the form */}
             {isProcessingOrComplete ? (
-               <StatusFeedback state={state} onReset={handleReset} />
+               <StatusFeedback state={state} onReset={handleReset} onViewHistory={() => setShowHistoryModal(true)} />
             ) : (
               <>
                 {/* Step 1: Document Type */}
@@ -336,5 +339,7 @@ const TranslatorApp: React.FC = () => {
     </div>
   );
 };
+
+
 
 export default TranslatorApp;

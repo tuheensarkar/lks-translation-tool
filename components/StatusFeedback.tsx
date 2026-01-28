@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CheckCircle2, AlertCircle, Loader2, Download, ArrowRight, History, FileText, Languages, ShieldCheck } from './ui/Icons';
 import { ProcessingStatus, TranslationState } from '../types';
 import { DOCUMENT_TYPES, LANGUAGES } from '../constants';
+import TranslationHistory from './TranslationHistory';
 
 interface StatusFeedbackProps {
   state: TranslationState;
   onReset: () => void;
+  onViewHistory?: () => void;
 }
 
-const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset }) => {
+const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewHistory }) => {
   const { status, progress, errorMessage, file, docType, sourceLang, targetLang } = state;
 
   if (status === 'idle') return null;
@@ -147,7 +149,10 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset }) => {
                 </div>
               </button>
               
-              <button className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-lks-gold hover:bg-lks-gold/5 transition-all group text-left">
+              <button 
+                onClick={() => window.location.href = '/history'}
+                className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-lks-gold hover:bg-lks-gold/5 transition-all group text-left"
+              >
                 <div className="p-2 bg-gray-100 rounded text-gray-500 group-hover:bg-white group-hover:text-lks-gold mr-4">
                   <History size={20} />
                 </div>
