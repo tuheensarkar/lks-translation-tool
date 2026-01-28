@@ -89,11 +89,12 @@ const TranslatorApp: React.FC = () => {
         errorMessage: response.error || 'Translation failed'
       }));
     } else {
-      // If status is processing, we might need to poll
-      setState(prev => ({ 
-        ...prev, 
-        status: 'processing', 
-        progress: response.progress || 50
+      // If status is processing or pending, we need to poll
+      setState(prev => ({
+        ...prev,
+        status: 'processing',
+        jobId: response.jobId,
+        progress: response.progress || 0
       }));
     }
   } catch (error: any) {
