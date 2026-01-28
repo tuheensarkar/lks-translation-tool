@@ -87,7 +87,10 @@ export const authorize = (...roles: string[]) => {
 export const apiKeyAuth = (req: Request, res: Response, next: NextFunction) => {
     const apiKey = req.headers['x-api-key'];
     
-    if (!apiKey || apiKey !== process.env.TRANSLATION_API_KEY) {
+    // Check both potential environment variable names
+    const validApiKey = process.env.TRANSLATION_API_KEY || process.env.EXTERNAL_TRANSLATION_API_KEY;
+
+    if (!apiKey || apiKey !== validApiKey) {
         return res.status(401).json({
             success: false,
             message: 'Invalid API key'
