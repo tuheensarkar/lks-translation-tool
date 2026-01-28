@@ -278,11 +278,26 @@ async function processTranslationAsync(
             ['processing', jobId]
         );
 
-        // Generate translated file path
-        const translatedDir = path.join(__dirname, '../../uploads/translated');
+        // Generate translated file path - Handle both local and Render environments
+        let translatedDir;
+        if (process.env.RENDER === 'true') {
+            // On Render, use absolute path from project root
+            translatedDir = path.join('/opt/render/project/src/backend/uploads/translated');
+        } else {
+            // Local development
+            translatedDir = path.join(__dirname, '../../uploads/translated');
+        }
+        
+        // Ensure directory exists
+        if (!fs.existsSync(translatedDir)) {
+            fs.mkdirSync(translatedDir, { recursive: true });
+        }
+        
         const ext = path.extname(originalFilename);
         const translatedFilename = `translated_${jobId}${ext}`;
         const translatedPath = path.join(translatedDir, translatedFilename);
+        
+        console.log(`[Translation] Saving file to: ${translatedPath}`);
 
         // Perform translation
         await translateDocument(sourcePath, translatedPath, sourceLanguage, targetLanguage, documentType);
