@@ -1,6 +1,6 @@
 import AuthService from './AuthService';
 
-const API_URL = import.meta.env.VITE_TRANSLATION_BACKEND_URL || 'http://20.20.20.205:5000';
+const API_URL = import.meta.env.VITE_TRANSLATION_BACKEND_URL || 'https://lks-translation-backend.onrender.com';
 
 interface TranslationRequest {
   documentType: string;
