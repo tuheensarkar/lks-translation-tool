@@ -138,6 +138,12 @@ except Exception as e:
                 console.error('Error cleaning up temp script:', unlinkErr);
             }
             
+            // Debug output for troubleshooting
+            console.log(`[Translation Debug] Exit code: ${code}`);
+            console.log(`[Translation Debug] Output: "${output.trim()}"`);
+            console.log(`[Translation Debug] Stderr: "${stderrOutput.trim()}"`);
+            console.log(`[Translation Debug] Output starts with SUCCESS: ${output.trim().startsWith('SUCCESS:')}`);
+            
             if (code === 0 && output.trim().startsWith('SUCCESS:')) {
                 console.log('[Translation] Python translation completed successfully');
                 resolve();
