@@ -33,7 +33,14 @@ async function translateDocument(
     documentType: string
 ): Promise<void> {
     // First, try to use the Python translator if available
-    const pythonTranslatorPath = path.join(__dirname, '../../../universal_translator.py');
+    let pythonTranslatorPath;
+    if (process.env.RENDER === 'true') {
+        // On Render, use absolute path from project root
+        pythonTranslatorPath = path.join('/opt/render/project/src/universal_translator.py');
+    } else {
+        // Local development
+        pythonTranslatorPath = path.join(__dirname, '../../../universal_translator.py');
+    }
     
     // Check if the Python file exists
     if (!fs.existsSync(pythonTranslatorPath)) {
