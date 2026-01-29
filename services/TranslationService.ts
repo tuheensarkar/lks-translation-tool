@@ -153,10 +153,26 @@ class TranslationService {
 
       console.log(`[TranslationService] Response status: ${response.status}`);
 
-      const data = await response.json();
+      // Handle non-JSON responses
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('[TranslationService] Non-JSON response:', text);
+        throw new Error(`Server returned ${response.status}: ${text.substring(0, 200)}`);
+      }
+      
       console.log('[TranslationService] Response data:', data);
 
       if (!response.ok) {
+        // Handle 404 specifically - might mean no jobs yet, not an error
+        if (response.status === 404) {
+          console.log('[TranslationService] 404 received - returning empty array (no jobs yet)');
+          return [];
+        }
         const errorMsg = data.message || data.error || `Server returned ${response.status}`;
         console.error('[TranslationService] API error:', errorMsg);
         throw new Error(errorMsg);

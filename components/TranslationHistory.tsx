@@ -36,11 +36,24 @@ const TranslationHistory: React.FC = () => {
       const history = await TranslationService.getTranslationHistory();
       console.log('[TranslationHistory] Received history:', history);
       setJobs(history as any); // Cast because types might slightly differ but are compatible
+      
+      // If history is empty, that's fine - just show empty state
+      if (history.length === 0) {
+        console.log('[TranslationHistory] No translation history found');
+      }
     } catch (err: any) {
-      const errorMessage = err.message || 'An error occurred while fetching translation history';
       console.error('[TranslationHistory] Error fetching translation history:', err);
-      setError(errorMessage);
-      setJobs([]); // Clear jobs on error
+      
+      // Handle 404 specifically - treat as empty history, not an error
+      if (err.message && (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('not found'))) {
+        console.log('[TranslationHistory] 404 received - treating as empty history');
+        setJobs([]);
+        setError(null); // Don't show error for 404
+      } else {
+        const errorMessage = err.message || 'An error occurred while fetching translation history';
+        setError(errorMessage);
+        setJobs([]); // Clear jobs on error
+      }
     } finally {
       setLoading(false);
     }
