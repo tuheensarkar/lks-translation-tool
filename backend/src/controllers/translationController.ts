@@ -467,9 +467,10 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
             `SELECT id, source_language, target_language, document_type,
               original_filename, translated_filename, status, created_at, completed_at
        FROM translation_jobs
+       WHERE user_id = $3
        ORDER BY created_at DESC
        LIMIT $1 OFFSET $2`,
-            [limit, offset]
+            [limit, offset, userId]
         );
 
         const jobs = result.rows.map((job: any) => ({
@@ -491,7 +492,14 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
             progress: job.status === 'completed' ? 100 : (job.status === 'processing' ? 50 : 0),
         }));
         
-        console.log(`[TranslationHistory] Returning ${jobsWithProgress.length} jobs`);
+        // Get total count for pagination
+        const totalCountResult = await query(
+            'SELECT COUNT(*) as count FROM translation_jobs WHERE user_id = $1',
+            [userId]
+        );
+        const totalCount = parseInt(totalCountResult.rows[0].count);
+        
+        console.log(`[TranslationHistory] Returning ${jobsWithProgress.length} jobs out of total ${totalCount}`);
         
         res.status(200).json({
             success: true,
@@ -500,7 +508,7 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
                 pagination: {
                     limit,
                     offset,
-                    total: jobs.length,
+                    total: totalCount, // Use actual total count instead of just current batch
                 },
             },
         });
