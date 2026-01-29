@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { CheckCircle2, AlertCircle, Loader2, Download, ArrowRight, History, FileText, Languages, ShieldCheck } from './ui/Icons';
+import { CheckCircle2, AlertCircle, Loader2, Download, ArrowRight, FileText, Languages, ShieldCheck } from './ui/Icons';
 import { ProcessingStatus, TranslationState } from '../types';
 import { DOCUMENT_TYPES, LANGUAGES } from '../constants';
-import TranslationHistory from './TranslationHistory';
+
 import TranslationService from '../services/TranslationService';
 
 interface StatusFeedbackProps {
@@ -192,16 +192,16 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewH
               </button>
               
               <button 
-                onClick={() => window.location.href = '/history'}
+                onClick={onReset}
                 className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-lks-gold hover:bg-lks-gold/5 transition-all group text-left"
               >
-                {/* <div className="p-2 bg-gray-100 rounded text-gray-500 group-hover:bg-white group-hover:text-lks-gold mr-4">
-                  <History size={20} />
+                <div className="p-2 bg-gray-100 rounded text-gray-500 group-hover:bg-white group-hover:text-lks-gold mr-4">
+                  <ArrowRight size={20} />
                 </div>
                 <div>
-                  <p className="font-medium text-lks-navy">View Translation Archive</p>
-                  <p className="text-xs text-gray-500">Access your translation history</p>
-                </div> */}
+                  <p className="font-medium text-lks-navy">Translate Another Document</p>
+                  <p className="text-xs text-gray-500">Begin a new translation project</p>
+                </div>
               </button>
             </div>
           </div>

@@ -4,7 +4,7 @@ import Footer from './Footer';
 import FileUpload from './FileUpload';
 import StatusFeedback from './StatusFeedback';
 import CustomDropdown from './CustomDropdown';
-import TranslationHistory from './TranslationHistory';  
+  
 import TranslationService from '../services/TranslationService'; 
 import { DOCUMENT_TYPES, LANGUAGES } from '../constants';
 import { TranslationState, DocumentType } from '../types';
