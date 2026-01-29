@@ -177,28 +177,15 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewH
           {/* Next Steps */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
             <h4 className="font-serif text-lg font-bold text-lks-navy mb-6">Next Steps</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex justify-center">
               <button 
                 onClick={onReset}
-                className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-lks-gold hover:bg-lks-gold/5 transition-all group text-left"
+                className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-lks-gold hover:bg-lks-gold/5 transition-all group"
               >
                 <div className="p-2 bg-gray-100 rounded text-gray-500 group-hover:bg-white group-hover:text-lks-gold mr-4">
                   <ArrowRight size={20} />
                 </div>
-                <div>
-                  <p className="font-medium text-lks-navy">Translate Another Document</p>
-                  <p className="text-xs text-gray-500">Begin a new translation project</p>
-                </div>
-              </button>
-              
-              <button 
-                onClick={onReset}
-                className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-lks-gold hover:bg-lks-gold/5 transition-all group text-left"
-              >
-                <div className="p-2 bg-gray-100 rounded text-gray-500 group-hover:bg-white group-hover:text-lks-gold mr-4">
-                  <ArrowRight size={20} />
-                </div>
-                <div>
+                <div className="text-center">
                   <p className="font-medium text-lks-navy">Translate Another Document</p>
                   <p className="text-xs text-gray-500">Begin a new translation project</p>
                 </div>

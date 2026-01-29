@@ -318,7 +318,7 @@ const TranslatorApp: React.FC = () => {
                 </div>
 
                 {/* Primary Action */}
-                <div className="flex justify-center pt-4">
+                <div className="flex justify-center pt-6">
                   <button
                     onClick={startTranslation}
                     disabled={!isReadyToTranslate}
@@ -328,7 +328,7 @@ const TranslatorApp: React.FC = () => {
                         ? 'bg-lks-navy text-white hover:bg-lks-navyLight hover:-translate-y-1' 
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'}
                     `}
-                    style={{ minWidth: '240px' }}
+                    style={{ minWidth: '280px' }}
                   >
                     <div className="relative z-10 flex items-center justify-center space-x-3 font-serif font-medium tracking-wide text-lg">
                        <span>Translate Document</span>
