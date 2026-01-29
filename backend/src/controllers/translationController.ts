@@ -438,15 +438,20 @@ export const getJobStatus = async (req: AuthRequest, res: Response) => {
 export const getTranslationHistory = async (req: AuthRequest, res: Response) => {
     try {
         // For API key authentication, we'll use a system user
-        // Check if the system user exists
-        const systemUserResult = await query('SELECT id FROM users WHERE email = $1', ['system@api-key.user']);
-        const userId = systemUserResult.rows[0]?.id || null;
+        // Check if the system user exists, create if not
+        let systemUserResult = await query('SELECT id FROM users WHERE email = $1', ['system@api-key.user']);
+        let userId;
         
-        if (!userId) {
-            return res.status(404).json({
-                success: false,
-                message: 'System user not found',
-            });
+        if (systemUserResult.rows.length === 0) {
+            // Create system user for API key requests if it doesn't exist
+            const newUserResult = await query(
+                'INSERT INTO users (name, email, password_hash, role, organization) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                ['API Key System User', 'system@api-key.user', '$2b$10$defaultHashForApiKeyUser', 'user', 'API System']
+            );
+            userId = newUserResult.rows[0].id;
+            console.log(`[TranslationHistory] Created system user: ${userId}`);
+        } else {
+            userId = systemUserResult.rows[0].id;
         }
         const limit = parseInt(req.query.limit as string) || 50;
         const offset = parseInt(req.query.offset as string) || 0;
