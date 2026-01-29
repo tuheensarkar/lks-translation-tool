@@ -195,13 +195,13 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewH
                 onClick={() => window.location.href = '/history'}
                 className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-lks-gold hover:bg-lks-gold/5 transition-all group text-left"
               >
-                <div className="p-2 bg-gray-100 rounded text-gray-500 group-hover:bg-white group-hover:text-lks-gold mr-4">
+                {/* <div className="p-2 bg-gray-100 rounded text-gray-500 group-hover:bg-white group-hover:text-lks-gold mr-4">
                   <History size={20} />
                 </div>
                 <div>
                   <p className="font-medium text-lks-navy">View Translation Archive</p>
                   <p className="text-xs text-gray-500">Access your translation history</p>
-                </div>
+                </div> */}
               </button>
             </div>
           </div>
