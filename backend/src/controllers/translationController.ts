@@ -300,7 +300,16 @@ async function processTranslationAsync(
             fs.mkdirSync(translatedDir, { recursive: true });
         }
         
-        const ext = path.extname(originalFilename);
+        // Decide output extension:
+        // - Our Python translator always generates a professional Word document
+        //   for PDF/image inputs, so using ".pdf" there would produce a corrupt file.
+        // - For PDFs (and any non-Office docs we treat as PDF), force ".docx"
+        //   so the downloaded file opens correctly in Word.
+        let ext = path.extname(originalFilename);
+        if (documentType === 'pdf') {
+            ext = '.docx';
+        }
+
         const translatedFilename = `translated_${jobId}${ext}`;
         const translatedPath = path.join(translatedDir, translatedFilename);
         
