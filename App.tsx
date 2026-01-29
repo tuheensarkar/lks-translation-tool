@@ -6,7 +6,7 @@ import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
 import TranslatorApp from './components/TranslatorApp';
 import ResetPassword from './pages/ResetPassword';
-import TranslationHistoryPage from './pages/TranslationHistoryPage';
+
 
 function App() {
   return (
@@ -29,14 +29,7 @@ function App() {
             }
           />
           
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <TranslationHistoryPage />
-              </ProtectedRoute>
-            }
-          />
+
 
           {/* Catch all - redirect to signin */}
           <Route path="*" element={<Navigate to="/signin" replace />} />

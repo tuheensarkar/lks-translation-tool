@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, BadgeCheck, ShieldCheck, User, LogOut, History } from './ui/Icons';
+import { Lock, BadgeCheck, ShieldCheck, User, LogOut } from './ui/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -66,13 +66,7 @@ const Header: React.FC = () => {
                   <div className="text-xs text-lks-gold/80 capitalize">{user.role}</div>
                 </div>
               </div>
-              <button
-                onClick={() => navigate('/history')}
-                className="p-1 rounded hover:bg-white/10 transition-colors mr-2"
-                title="Translation History"
-              >
-                <History size={14} className="text-white" />
-              </button>
+
               <button
                 onClick={handleLogout}
                 className="p-1 rounded hover:bg-white/10 transition-colors"
