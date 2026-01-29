@@ -141,6 +141,8 @@ class TranslationService {
   // Get translation history
   async getTranslationHistory(limit: number = 50, offset: number = 0): Promise<TranslationJob[]> {
     try {
+      console.log(`[TranslationService] Fetching translation history from: ${API_URL}/api/jobs`);
+      
       // Use the external API endpoint for translation history
       const response = await fetch(`${API_URL}/api/jobs?limit=${limit}&offset=${offset}`, {
         method: 'GET',
@@ -149,27 +151,37 @@ class TranslationService {
         },
       });
 
+      console.log(`[TranslationService] Response status: ${response.status}`);
+
       const data = await response.json();
+      console.log('[TranslationService] Response data:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch translation history');
+        const errorMsg = data.message || data.error || `Server returned ${response.status}`;
+        console.error('[TranslationService] API error:', errorMsg);
+        throw new Error(errorMsg);
       }
 
-      // Map external API response to TranslationJob interface
-      return data.jobs?.map((job: any) => ({
-        id: job.jobId,
+      // Backend returns: { success: true, data: { jobs: [...], pagination: {...} } }
+      const jobs = data.data?.jobs || data.jobs || [];
+      console.log(`[TranslationService] Found ${jobs.length} jobs`);
+      
+      // Map backend API response to TranslationJob interface
+      return jobs.map((job: any) => ({
+        id: job.id || job.jobId, // Handle both id and jobId
         sourceLanguage: job.sourceLanguage,
         targetLanguage: job.targetLanguage,
         documentType: job.documentType,
         originalFilename: job.originalFilename,
         translatedFilename: job.translatedFilename,
         status: job.status,
-        errorMessage: job.error,
+        errorMessage: job.errorMessage || job.error,
         createdAt: job.createdAt,
         completedAt: job.completedAt,
         translatedFileUrl: job.translatedFileUrl,
-      })) || [];
+      }));
     } catch (error: any) {
+      console.error('[TranslationService] Error fetching translation history:', error);
       throw new Error(error.message || 'Failed to fetch translation history');
     }
   }

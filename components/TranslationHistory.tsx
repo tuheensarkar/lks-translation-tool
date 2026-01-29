@@ -31,11 +31,16 @@ const TranslationHistory: React.FC = () => {
   const fetchTranslationHistory = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
+      console.log('[TranslationHistory] Fetching translation history...');
       const history = await TranslationService.getTranslationHistory();
+      console.log('[TranslationHistory] Received history:', history);
       setJobs(history as any); // Cast because types might slightly differ but are compatible
     } catch (err: any) {
-      setError(err.message || 'An error occurred while fetching translation history');
-      console.error('Error fetching translation history:', err);
+      const errorMessage = err.message || 'An error occurred while fetching translation history';
+      console.error('[TranslationHistory] Error fetching translation history:', err);
+      setError(errorMessage);
+      setJobs([]); // Clear jobs on error
     } finally {
       setLoading(false);
     }
