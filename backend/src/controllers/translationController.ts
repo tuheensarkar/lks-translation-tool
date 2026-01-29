@@ -303,10 +303,22 @@ async function processTranslationAsync(
         // Decide output extension:
         // - Our Python translator always generates a professional Word document
         //   for PDF/image inputs, so using ".pdf" there would produce a corrupt file.
-        // - For PDFs (and any non-Office docs we treat as PDF), force ".docx"
+        // - For PDFs, images, and other non-Office docs, force ".docx"
         //   so the downloaded file opens correctly in Word.
-        let ext = path.extname(originalFilename);
-        if (documentType === 'pdf') {
+        let ext = path.extname(originalFilename).toLowerCase();
+        const docTypeLower = (documentType || '').toLowerCase();
+        const originalExtLower = ext.toLowerCase();
+        
+        // Force .docx for PDFs, images, and other formats that generate Word docs
+        if (docTypeLower === 'pdf' || 
+            docTypeLower === 'image' || 
+            originalExtLower === '.pdf' ||
+            ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'].includes(originalExtLower)) {
+            ext = '.docx';
+        }
+        // Keep original extension for Word, Excel, and other Office formats
+        else if (!['.docx', '.doc', '.xlsx', '.xls', '.xlsm'].includes(originalExtLower)) {
+            // For unknown formats, default to .docx since translator generates Word docs
             ext = '.docx';
         }
 
@@ -532,9 +544,26 @@ export const downloadFile = async (req: AuthRequest, res: Response) => {
         }
 
         console.log(`[Download] Sending file: ${job.translated_file_path}`);
+        console.log(`[Download] Filename: ${job.translated_filename}`);
 
-        // Send file
-        res.download(job.translated_file_path, job.translated_filename, (err: Error | null) => {
+        // Ensure correct Content-Type header and filename
+        const filename = job.translated_filename || path.basename(job.translated_file_path);
+        const ext = path.extname(filename).toLowerCase();
+        
+        // Set proper Content-Type based on file extension
+        if (ext === '.docx') {
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        } else if (ext === '.xlsx') {
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        } else if (ext === '.pdf') {
+            res.setHeader('Content-Type', 'application/pdf');
+        }
+        
+        // Set Content-Disposition header to ensure browser uses correct filename
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        // Send file with proper filename
+        res.download(job.translated_file_path, filename, (err: Error | null) => {
             if (err) {
                 console.error('[Download] res.download callback error:', err);
                 if (!res.headersSent) {

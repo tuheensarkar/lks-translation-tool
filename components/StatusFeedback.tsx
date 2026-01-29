@@ -22,11 +22,26 @@ const StatusFeedback: React.FC<StatusFeedbackProps> = ({ state, onReset, onViewH
     setIsDownloading(true);
     try {
       // Extract filename from original file and create translated filename
+      // Note: PDFs and images are converted to .docx by the translator
       const originalName = file.name;
       const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
-      const ext = originalName.substring(originalName.lastIndexOf('.')) || '';
+      const originalExt = originalName.substring(originalName.lastIndexOf('.')).toLowerCase() || '';
+      
+      // Determine correct extension based on document type
+      // PDFs and images generate Word documents, so use .docx
+      let ext = originalExt;
+      const docTypeLower = (docType || '').toLowerCase();
+      if (docTypeLower === 'pdf' || 
+          docTypeLower === 'image' || 
+          originalExt === '.pdf' ||
+          ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'].includes(originalExt)) {
+        ext = '.docx';
+      }
+      
       const translatedFilename = `${nameWithoutExt}_translated${ext}`;
       
+      // The backend will set the correct filename in Content-Disposition header,
+      // but we provide a fallback filename here
       await TranslationService.downloadTranslatedDocument(translatedFileUrl, translatedFilename);
     } catch (error: any) {
       console.error('[StatusFeedback] Download error:', error);

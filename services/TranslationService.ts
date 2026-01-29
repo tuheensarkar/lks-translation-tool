@@ -199,20 +199,33 @@ class TranslationService {
     }
 
     console.log('[Frontend] Download response received, converting to blob...');
+    
+    // Try to extract filename from Content-Disposition header first
+    let downloadFilename = filename || 'translated_document';
+    const contentDisposition = response.headers.get('Content-Disposition');
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch && filenameMatch[1]) {
+        // Remove quotes if present
+        downloadFilename = filenameMatch[1].replace(/['"]/g, '');
+        console.log(`[Frontend] Extracted filename from header: ${downloadFilename}`);
+      }
+    }
+    
     // Create blob from response
     const blob = await response.blob();
-    console.log(`[Frontend] Blob created (Size: ${blob.size} bytes). Triggering browser download...`);
+    console.log(`[Frontend] Blob created (Size: ${blob.size} bytes, Type: ${blob.type}). Triggering browser download...`);
 
-    // Create download link
+    // Create download link with correct filename
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename || 'translated_document';
+    link.download = downloadFilename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    console.log('[Frontend] Download triggered successfully');
+    console.log(`[Frontend] Download triggered successfully with filename: ${downloadFilename}`);
   } catch (error: any) {
     console.error('[Frontend] Download error:', error.message);
     throw new Error(error.message || 'Failed to download translated document');
