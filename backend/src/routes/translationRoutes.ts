@@ -26,18 +26,19 @@ router.post(
 );
 
 /**
+ * @route   GET /api/jobs
+ * @desc    Get user's translation history
+ * @access  Private
+ * NOTE: This route must come BEFORE /jobs/:jobId to avoid route conflicts
+ */
+router.get('/jobs', apiKeyAuth, getTranslationHistory);
+
+/**
  * @route   GET /api/jobs/:jobId
  * @desc    Get translation job status
  * @access  Private
  */
 router.get('/jobs/:jobId', apiKeyAuth, getJobStatus);
-
-/**
- * @route   GET /api/jobs
- * @desc    Get user's translation history
- * @access  Private
- */
-router.get('/jobs', apiKeyAuth, getTranslationHistory);
 
 /**
  * @route   GET /api/files/:jobId

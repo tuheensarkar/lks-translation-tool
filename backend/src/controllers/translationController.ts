@@ -437,6 +437,9 @@ export const getJobStatus = async (req: AuthRequest, res: Response) => {
 // Get user's translation history
 export const getTranslationHistory = async (req: AuthRequest, res: Response) => {
     try {
+        console.log(`[TranslationHistory] Request received - Query:`, req.query);
+        console.log(`[TranslationHistory] Headers:`, req.headers);
+        
         // For API key authentication, we'll use a system user
         // Check if the system user exists, create if not
         let systemUserResult = await query('SELECT id FROM users WHERE email = $1', ['system@api-key.user']);
@@ -444,6 +447,7 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
         
         if (systemUserResult.rows.length === 0) {
             // Create system user for API key requests if it doesn't exist
+            console.log(`[TranslationHistory] System user not found, creating...`);
             const newUserResult = await query(
                 'INSERT INTO users (name, email, password_hash, role, organization) VALUES ($1, $2, $3, $4, $5) RETURNING id',
                 ['API Key System User', 'system@api-key.user', '$2b$10$defaultHashForApiKeyUser', 'user', 'API System']
@@ -452,9 +456,12 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
             console.log(`[TranslationHistory] Created system user: ${userId}`);
         } else {
             userId = systemUserResult.rows[0].id;
+            console.log(`[TranslationHistory] Using existing system user: ${userId}`);
         }
         const limit = parseInt(req.query.limit as string) || 50;
         const offset = parseInt(req.query.offset as string) || 0;
+        
+        console.log(`[TranslationHistory] Fetching jobs with limit=${limit}, offset=${offset}`);
 
         const result = await query(
             `SELECT id, source_language, target_language, document_type,
@@ -484,6 +491,8 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
             progress: job.status === 'completed' ? 100 : (job.status === 'processing' ? 50 : 0),
         }));
         
+        console.log(`[TranslationHistory] Returning ${jobsWithProgress.length} jobs`);
+        
         res.status(200).json({
             success: true,
             data: {
@@ -496,10 +505,12 @@ export const getTranslationHistory = async (req: AuthRequest, res: Response) => 
             },
         });
     } catch (error: any) {
-        console.error('Get translation history error:', error);
+        console.error('[TranslationHistory] Get translation history error:', error);
+        console.error('[TranslationHistory] Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch translation history',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 };
