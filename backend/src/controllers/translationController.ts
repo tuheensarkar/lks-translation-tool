@@ -325,10 +325,28 @@ async function processTranslationAsync(
         const translatedFilename = `translated_${jobId}${ext}`;
         const translatedPath = path.join(translatedDir, translatedFilename);
         
+        console.log(`[Translation] Original filename: ${originalFilename}`);
+        console.log(`[Translation] Document type: ${documentType}`);
+        console.log(`[Translation] Determined extension: ${ext}`);
+        console.log(`[Translation] Translated filename: ${translatedFilename}`);
         console.log(`[Translation] Saving file to: ${translatedPath}`);
 
         // Perform translation
+        // IMPORTANT: Ensure the output path has the correct extension before calling translator
+        // The Python translator will use this path, so it must be correct
+        console.log(`[Translation] Calling Python translator with output path: ${translatedPath}`);
         await translateDocument(sourcePath, translatedPath, sourceLanguage, targetLanguage, documentType);
+        
+        // Verify the file was created with correct extension
+        if (fs.existsSync(translatedPath)) {
+            const actualExt = path.extname(translatedPath).toLowerCase();
+            console.log(`[Translation] File created successfully with extension: ${actualExt}`);
+            if (ext === '.docx' && actualExt !== '.docx') {
+                console.error(`[Translation] ERROR: Expected .docx but file has ${actualExt}. This should not happen!`);
+            }
+        } else {
+            console.error(`[Translation] ERROR: Translated file not found at expected path: ${translatedPath}`);
+        }
 
         // Update job as completed
         await query(
@@ -544,11 +562,30 @@ export const downloadFile = async (req: AuthRequest, res: Response) => {
         }
 
         console.log(`[Download] Sending file: ${job.translated_file_path}`);
-        console.log(`[Download] Filename: ${job.translated_filename}`);
+        console.log(`[Download] Filename from DB: ${job.translated_filename}`);
+        
+        // Get actual file extension from disk
+        const actualFileExt = path.extname(job.translated_file_path).toLowerCase();
+        console.log(`[Download] Actual file extension: ${actualFileExt}`);
 
         // Ensure correct Content-Type header and filename
-        const filename = job.translated_filename || path.basename(job.translated_file_path);
-        const ext = path.extname(filename).toLowerCase();
+        let filename = job.translated_filename || path.basename(job.translated_file_path);
+        let ext = path.extname(filename).toLowerCase();
+        
+        // CRITICAL FIX: If the file on disk is .docx but filename says .pdf, correct it
+        // This handles cases where old jobs had .pdf in database but file is actually .docx
+        if (actualFileExt === '.docx' && ext === '.pdf') {
+            console.log(`[Download] WARNING: File is .docx but filename says .pdf. Correcting...`);
+            filename = filename.replace(/\.pdf$/i, '.docx');
+            ext = '.docx';
+        }
+        
+        // Also ensure PDFs always download as .docx (since translator creates Word docs)
+        if (ext === '.pdf') {
+            console.log(`[Download] WARNING: PDF extension detected. Converting to .docx...`);
+            filename = filename.replace(/\.pdf$/i, '.docx');
+            ext = '.docx';
+        }
         
         // Set proper Content-Type based on file extension
         if (ext === '.docx') {
