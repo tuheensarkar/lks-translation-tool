@@ -51,7 +51,7 @@ const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760'), // 10MB default
+        fileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800'), // 50MB limit
     },
 });
 
@@ -61,7 +61,7 @@ export const handleUploadError = (err: Error | multer.MulterError, req: Request,
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
                 success: false,
-                message: 'File size exceeds the maximum limit of 10MB',
+                message: 'File size exceeds the maximum limit of 50MB',
             });
         }
         return res.status(400).json({
