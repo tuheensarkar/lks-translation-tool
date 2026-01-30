@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: lks-translation-frontend
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      # Authentication Service (Your System)
+      - key: VITE_RENDER_AUTH_URL
+        value: http://your-system-ip:port
+      - key: VITE_RENDER_AUTH_API_KEY
+        value: your_auth_api_key_here
+      # Translation Service (Manager's System)
+      - key: VITE_TRANSLATION_BACKEND_URL
+        value: http://20.20.20.205:5000
+      - key: VITE_TRANSLATION_API_KEY
+        value: tr_api_1234567890abcdefghijklmnopqrstuvwxyz
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { User, AuthState } from '../types/auth';
-import AuthService from '../services/AuthService';
+import RenderAuthService from '../services/RenderAuthService';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -22,20 +22,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Check if user is already authenticated on app load
   useEffect(() => {
-    console.log('Checking authentication...');
+    console.log('[AuthContext] Checking authentication...');
     checkAuth();
   }, []);
 
   const checkAuth = async (): Promise<void> => {
-    console.log('checkAuth called');
+    console.log('[AuthContext] checkAuth called');
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const decoded = await AuthService.verifyToken();
-      console.log('Decoded token:', decoded);
+      const decoded = await RenderAuthService.verifyToken();
+      console.log('[AuthContext] Decoded token:', decoded);
 
       if (decoded) {
-        const user = await AuthService.getCurrentUser();
+        const user = await RenderAuthService.getCurrentUser();
 
         setState({
           user: user,
@@ -43,12 +43,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           isLoading: false,
           error: null
         });
-        console.log('Authentication successful');
+        console.log('[AuthContext] Authentication successful');
         return;
       }
 
       // If no valid token
-      console.log('Setting unauthenticated state');
+      console.log('[AuthContext] Setting unauthenticated state');
       setState({
         user: null,
         isAuthenticated: false,
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         error: null
       });
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('[AuthContext] Auth check error:', error);
       setState({
         user: null,
         isAuthenticated: false,
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      const result = await AuthService.login({ email, password });
+      const result = await RenderAuthService.login({ email, password });
 
       setState({
         user: result.user,
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async (): Promise<void> => {
-    await AuthService.logout();
+    await RenderAuthService.logout();
     setState({
       user: null,
       isAuthenticated: false,
@@ -103,7 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      const result = await AuthService.register(userData);
+      const result = await RenderAuthService.register(userData);
 
       setState({
         user: result.user,

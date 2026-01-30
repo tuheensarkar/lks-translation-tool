@@ -1,6 +1,6 @@
-import AuthService from './AuthService';
+// TranslationService communicates with company backend for translation services
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_TRANSLATION_BACKEND_URL || 'https://lks-translation-backend.onrender.com';
+const API_URL = import.meta.env.VITE_TRANSLATION_BACKEND_URL || 'http://20.20.20.205:5000';
 
 interface TranslationRequest {
   documentType: string;
@@ -32,14 +32,14 @@ interface TranslationJob {
 }
 
 class TranslationService {
-  // Get auth token
-  private getAuthHeader(): { Authorization: string } {
-    const token = AuthService.getAuthToken();
-    if (!token) {
-      throw new Error('No authentication token found. Please login.');
-    }
-    return { Authorization: `Bearer ${token}` };
-  }
+  // Translation service uses API key, not auth token
+  // private getAuthHeader(): { Authorization: string } {
+  //   const token = AuthService.getAuthToken();
+  //   if (!token) {
+  //     throw new Error('No authentication token found. Please login.');
+  //   }
+  //   return { Authorization: `Bearer ${token}` };
+  // }
 
   // Translate document
   async translateDocument(request: TranslationRequest): Promise<TranslationResponse> {
@@ -89,15 +89,15 @@ class TranslationService {
       throw new Error(errorMsg);
     }
 
-    // ✅ Backend returns: { success: true, data: { jobId, status, progress } }
-    const result = data.data || {};
+    // ✅ Backend returns: { jobId, status, progress, translatedFileUrl }
+    const result = data;
     
     return {
       jobId: result.jobId,
       status: result.status,
       progress: result.progress || 0,
       translatedFileUrl: result.translatedFileUrl,
-      error: data.error
+      error: data.error || data.message
     };
   } catch (error: any) {
     console.error('[TranslationService] Translation error:', error);
