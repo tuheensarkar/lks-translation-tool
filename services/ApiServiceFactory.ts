@@ -29,7 +29,7 @@ export class ApiServiceFactory {
   static getBaseUrl(serviceType: 'auth' | 'translation' | 'other'): string {
     switch (serviceType) {
       case 'auth':
-        return import.meta.env.VITE_RENDER_AUTH_URL || 'https://lks-translation-frontend.onrender.com';
+        return import.meta.env.VITE_RENDER_AUTH_URL || 'https://lks-auth-service.onrender.com';
       case 'translation':
         return import.meta.env.VITE_TRANSLATION_BACKEND_URL || 'http://20.20.20.205:5000';
       case 'other':
@@ -44,7 +44,7 @@ export class ApiServiceFactory {
   static getApiKey(serviceType: 'auth' | 'translation' | 'other'): string {
     switch (serviceType) {
       case 'auth':
-        return import.meta.env.VITE_RENDER_AUTH_API_KEY || 'render_auth_key_123';
+        return import.meta.env.VITE_RENDER_AUTH_API_KEY || '2e3d1c8119481fde55b9980a8dae37c0f43b06b13c6bef7da0a6e97aa3ff8927';
       case 'translation':
       case 'other':
         return import.meta.env.VITE_TRANSLATION_API_KEY || 'tr_api_1234567890abcdefghijklmnopqrstuvwxyz';

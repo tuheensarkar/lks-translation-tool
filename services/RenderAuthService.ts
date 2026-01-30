@@ -8,8 +8,8 @@ const getEnvVar = (name: string, fallback: string): string => {
   return value;
 };
 
-const RENDER_AUTH_URL = getEnvVar('VITE_RENDER_AUTH_URL', 'https://lks-translation-frontend.onrender.com');
-const RENDER_AUTH_API_KEY = getEnvVar('VITE_RENDER_AUTH_API_KEY', 'render_auth_key_123');
+const RENDER_AUTH_URL = getEnvVar('VITE_RENDER_AUTH_URL', 'https://lks-auth-service.onrender.com');
+const RENDER_AUTH_API_KEY = getEnvVar('VITE_RENDER_AUTH_API_KEY', '2e3d1c8119481fde55b9980a8dae37c0f43b06b13c6bef7da0a6e97aa3ff8927');
 
 interface LoginResponse {
   user: User;
