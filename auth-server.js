@@ -4,23 +4,55 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { Pool } from 'pg';
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const SECRET_KEY = process.env.VITE_RENDER_AUTH_API_KEY || 'your-secret-key-change-this-in-production';
 
+// PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://localhost:5432/lks_auth',
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false
+});
+
 // Middleware
 app.use(cors({
   origin: [
-    'https://your-render-frontend.onrender.com',
+    'https://lks-translation-frontend.onrender.com',
     'http://localhost:3000'
   ],
   credentials: true
 }));
 app.use(express.json());
 
-// In-memory user storage (use database in production)
-const users = [];
+// Initialize database tables
+async function initializeDatabase() {
+  try {
+    // Create users table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'client',
+        organization VARCHAR(255) DEFAULT 'Lakshmi Sri',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP,
+        is_active BOOLEAN DEFAULT true
+      )
+    `);
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Error initializing database:', error);
+  }
+}
+
+// Initialize database when server starts
+initializeDatabase();
 
 // Helper functions
 const generateToken = (user) => {
@@ -35,8 +67,19 @@ const generateToken = (user) => {
   );
 };
 
-const verifyToken = (token) => {
+const verifyToken = async (token) => {
   try {
+    // First check if token is blacklisted
+    const result = await pool.query(
+      'SELECT token FROM token_blacklist WHERE token = $1 AND expires_at > NOW()',
+      [token]
+    );
+    
+    if (result.rows.length > 0) {
+      // Token is blacklisted
+      return null;
+    }
+    
     return jwt.verify(token, SECRET_KEY);
   } catch (error) {
     return null;
@@ -50,27 +93,29 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user
-    const user = users.find(u => u.email === email);
-    if (!user) {
+    // Find user from database
+    const userResult = await pool.query('SELECT * FROM users WHERE email = $1 AND is_active = true', [email]);
+    if (userResult.rows.length === 0) {
       return res.status(401).json({ 
         error: 'Invalid email or password' 
       });
     }
     
+    const user = userResult.rows[0];
+    
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ 
         error: 'Invalid email or password' 
       });
     }
     
+    // Update last login
+    await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
+    
     // Generate token
     const token = generateToken(user);
-    
-    // Update last login
-    user.lastLogin = new Date();
     
     res.json({
       user: {
@@ -79,8 +124,8 @@ app.post('/api/auth/login', async (req, res) => {
         name: user.name,
         role: user.role,
         organization: user.organization,
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin
+        createdAt: user.created_at,
+        lastLogin: user.last_login
       },
       token: token,
       message: 'Login successful'
@@ -97,8 +142,9 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, name, organization } = req.body;
     
-    // Check if user exists
-    if (users.find(u => u.email === email)) {
+    // Check if user exists in database
+    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existingUser.rows.length > 0) {
       return res.status(400).json({ 
         error: 'User already exists' 
       });
@@ -114,19 +160,13 @@ app.post('/api/auth/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Create user
-    const newUser = {
-      id: `user_${Date.now()}`,
-      email: email,
-      name: name,
-      password: hashedPassword,
-      role: 'client',
-      organization: organization || 'Lakshmi Sri',
-      createdAt: new Date(),
-      lastLogin: new Date()
-    };
+    // Create user in database
+    const newUserResult = await pool.query(
+      'INSERT INTO users (email, password_hash, name, organization) VALUES ($1, $2, $3, $4) RETURNING *',
+      [email, hashedPassword, name, organization || 'Lakshmi Sri']
+    );
     
-    users.push(newUser);
+    const newUser = newUserResult.rows[0];
     
     // Generate token
     const token = generateToken(newUser);
@@ -138,8 +178,8 @@ app.post('/api/auth/register', async (req, res) => {
         name: newUser.name,
         role: newUser.role,
         organization: newUser.organization,
-        createdAt: newUser.createdAt,
-        lastLogin: newUser.lastLogin
+        createdAt: newUser.created_at,
+        lastLogin: newUser.last_login
       },
       token: token,
       message: 'Registration successful'
@@ -151,31 +191,76 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/logout
-app.post('/api/auth/logout', (req, res) => {
-  // In a real implementation, you might want to invalidate the token
-  // For now, we'll just send a success response
-  res.json({ message: 'Logout successful' });
-});
+// Initialize token blacklist table
+async function initializeBlacklistTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS token_blacklist (
+        id SERIAL PRIMARY KEY,
+        token TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('Token blacklist table initialized successfully');
+  } catch (error) {
+    console.error('Error initializing token blacklist table:', error);
+  }
+}
 
-// GET /api/auth/me
-app.get('/api/auth/me', (req, res) => {
+// Initialize blacklist table when server starts
+initializeBlacklistTable();
+
+// POST /api/auth/logout
+app.post('/api/auth/logout', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
     }
     
+    // Verify the token to get its expiration time
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(401).json({ error: 'Invalid token' });
     }
     
-    // Find user
-    const user = users.find(u => u.id === decoded.userId);
-    if (!user) {
+    // Calculate the token's original expiration time
+    const tokenExpiration = new Date(decoded.exp * 1000);
+    
+    // Add the token to the blacklist
+    await pool.query(
+      'INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2)',
+      [token, tokenExpiration]
+    );
+    
+    res.json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+// GET /api/auth/me
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    // Find user from database
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1 AND is_active = true', [decoded.userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+    
+    const user = userResult.rows[0];
     
     res.json({
       user: {
@@ -184,8 +269,8 @@ app.get('/api/auth/me', (req, res) => {
         name: user.name,
         role: user.role,
         organization: user.organization,
-        createdAt: user.createdAt,
-        lastLogin: user.lastLogin
+        createdAt: user.created_at,
+        lastLogin: user.last_login
       }
     });
     
@@ -196,14 +281,14 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 // POST /api/auth/verify
-app.post('/api/auth/verify', (req, res) => {
+app.post('/api/auth/verify', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
     }
     
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (!decoded) {
       return res.status(401).json({ error: 'Invalid token' });
     }

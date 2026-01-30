@@ -5,8 +5,6 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import ForgotPassword from './pages/ForgotPassword';
 import TranslatorApp from './components/TranslatorApp';
-// import AuthTestComponent from './components/AuthTestComponent';
-// import EnvTestComponent from './components/EnvTestComponent';
 import ResetPassword from './pages/ResetPassword';
 
 
