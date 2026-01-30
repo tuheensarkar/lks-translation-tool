@@ -1,0 +1,23 @@
+{
+  "name": "lks-auth-service",
+  "version": "1.0.0",
+  "description": "Authentication service for LKS translation platform",
+  "type": "module",
+  "main": "auth-server.js",
+  "scripts": {
+    "start": "node auth-server.js",
+    "dev": "nodemon auth-server.js"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
