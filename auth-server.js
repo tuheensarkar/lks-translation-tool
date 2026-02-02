@@ -317,9 +317,25 @@ app.get('/api/debug/users', async (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date() });
+// Health check endpoint with database test
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    const result = await pool.query('SELECT NOW()');
+    res.json({ 
+      status: 'OK', 
+      timestamp: new Date(),
+      db: 'Connected',
+      db_time: result.rows[0].now
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'OK', 
+      timestamp: new Date(),
+      db: 'Error',
+      db_error: error.message
+    });
+  }
 });
 
 // Start server
