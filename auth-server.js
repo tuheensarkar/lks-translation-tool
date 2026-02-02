@@ -354,7 +354,7 @@ app.get('/api/health', async (req, res) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Authentication server running on port ${PORT} - v2`);
+  console.log(`Authentication server running on port ${PORT} - v3`);
   console.log(`Access URLs:`);
   console.log(`- Login: http://localhost:${PORT}/api/auth/login`);
   console.log(`- Register: http://localhost:${PORT}/api/auth/register`);
