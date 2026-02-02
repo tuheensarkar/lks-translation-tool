@@ -12,7 +12,7 @@ const SECRET_KEY = process.env.VITE_RENDER_AUTH_API_KEY || 'your-secret-key-chan
 
 // PostgreSQL connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://localhost:5432/lks_auth',
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://lks_translation_user:GveKC3YAYidizrPdgGkXE1AvQW1f5OT1@dpg-d5s9mnffte5s73co24ag-a.virginia-postgres.render.com/lks_translation',
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
   } : false
