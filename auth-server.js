@@ -317,15 +317,11 @@ app.get('/api/debug/users', async (req, res) => {
   }
 });
 
-// Admin endpoint to delete a user (REMOVE IN PRODUCTION)
-app.delete('/api/debug/users/:email', async (req, res) => {
+// Debug endpoint to check user data (REMOVE IN PRODUCTION)
+app.get('/api/debug/users', async (req, res) => {
   try {
-    const { email } = req.params;
-    const result = await pool.query('DELETE FROM users WHERE email = $1 RETURNING *', [email]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    res.json({ message: 'User deleted successfully', deletedUser: result.rows[0] });
+    const result = await pool.query('SELECT id, email, password_hash FROM users');
+    res.json({ users: result.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
