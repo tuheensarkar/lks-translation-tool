@@ -104,7 +104,10 @@ app.post('/api/auth/login', async (req, res) => {
     const user = userResult.rows[0];
     
     // Verify password
+    console.log('Comparing password for user:', user.email);
+    console.log('Stored hash:', user.password_hash);
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    console.log('Password valid:', isValidPassword);
     if (!isValidPassword) {
       return res.status(401).json({ 
         error: 'Invalid email or password' 
@@ -301,6 +304,16 @@ app.post('/api/auth/verify', async (req, res) => {
   } catch (error) {
     console.error('Token verification error:', error);
     res.status(500).json({ error: 'Token verification failed' });
+  }
+});
+
+// Debug endpoint to check user data (REMOVE IN PRODUCTION)
+app.get('/api/debug/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, password_hash FROM users');
+    res.json({ users: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
